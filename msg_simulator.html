@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mixed-Species Group Simulator — Proof of Concept</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0A1F2B;
+    --panel: #0F2A38;
+    --panel-line: #1C3E4E;
+    --text: #D7E4E6;
+    --text-dim: #7E97A0;
+    --coral: #FF8C5A;
+    --sand: #E8D9B5;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height:100vh;
+    padding: 28px;
+  }
+  h1{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size: 22px;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.01em;
+  }
+  .subtitle{
+    color: var(--text-dim);
+    font-size: 13px;
+    margin: 0 0 22px 0;
+    max-width: 640px;
+    line-height:1.5;
+  }
+  .layout{
+    display:flex;
+    gap: 22px;
+    align-items:flex-start;
+    flex-wrap: wrap;
+  }
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .controls{ width: 260px; flex-shrink:0; }
+  .control-group{ margin-bottom: 18px; }
+  .control-group:last-child{ margin-bottom:0; }
+  .control-label{
+    display:flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .control-label span.val{
+    font-family:'JetBrains Mono', monospace;
+    color: var(--sand);
+  }
+  input[type=range]{
+    width:100%;
+    accent-color: var(--coral);
+  }
+  input[type=number]{
+    width:64px;
+    background: var(--bg);
+    border:1px solid var(--panel-line);
+    color: var(--text);
+    border-radius:6px;
+    padding:4px 6px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+  }
+  .row{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .section-label{
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin: 0 0 10px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--panel-line);
+  }
+  button{
+    font-family:'Inter', sans-serif;
+    font-weight:500;
+    font-size: 13px;
+    border-radius:7px;
+    border: 1px solid var(--panel-line);
+    background: var(--bg);
+    color: var(--text);
+    padding: 9px 14px;
+    cursor:pointer;
+    transition: border-color .15s ease;
+  }
+  button:hover{ border-color: var(--coral); }
+  button.primary{
+    background: var(--coral);
+    color: #2C1608;
+    border-color: var(--coral);
+    font-weight:600;
+  }
+  .btn-row{ display:flex; gap:8px; margin-top:16px; }
+  .btn-row button{ flex:1; }
+  .canvas-wrap{
+    position:relative;
+    line-height:0;
+  }
+  canvas{
+    border-radius: 10px;
+    background: #081720;
+    display:block;
+  }
+  .legend{
+    position:absolute;
+    top:14px;
+    left:14px;
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    font-size:11px;
+    background: rgba(10,31,43,0.7);
+    padding: 8px 10px;
+    border-radius: 7px;
+    pointer-events:none;
+  }
+  .legend-item{ display:flex; align-items:center; gap:6px; color: var(--text-dim); }
+  .legend-dot{ width:8px; height:8px; border-radius:50%; }
+  .metrics{
+    width: 260px;
+    flex-shrink:0;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .metric-big{
+    font-size: 30px;
+    font-weight:500;
+    color: var(--coral);
+    line-height:1;
+    margin-bottom: 2px;
+  }
+  .metric-caption{
+    font-size:11px;
+    color: var(--text-dim);
+    margin-bottom: 18px;
+  }
+  .group-list{ display:flex; flex-direction:column; gap:6px; max-height:280px; overflow-y:auto; }
+  .group-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:11.5px;
+    padding: 6px 8px;
+    border-radius:6px;
+    background: var(--bg);
+    border: 1px solid var(--panel-line);
+  }
+  .group-row.mixed{ border-color: var(--coral); }
+  .composition{ display:flex; gap:3px; }
+  .chip{ width:7px; height:7px; border-radius:50%; }
+  .group-size{ margin-left:auto; color: var(--text-dim); }
+  .empty-note{ color: var(--text-dim); font-size:11.5px; }
+</style>
+</head>
+<body>
+
+<h1>Mixed-species group simulator</h1>
+<p class="subtitle">Individual-level zonal interaction model (repulsion / orientation / attraction) for reef fish. Reef cover reduces perception locally; predation risk strengthens grouping; mixing tendency sets how strongly individuals respond to heterospecifics versus conspecifics. Proof of concept — not calibrated against field data yet.</p>
+
+<div class="layout">
+
+  <div class="panel controls">
+    <p class="section-label">Population</p>
+    <div class="control-group">
+      <div class="control-label"><span>Species</span><span class="val" id="val-species">3</span></div>
+      <input type="range" id="species-count" min="1" max="5" step="1" value="3">
+    </div>
+    <div class="control-group">
+      <div class="control-label"><span>Individuals per species</span><span class="val" id="val-individuals">14</span></div>
+      <input type="range" id="individuals-count" min="4" max="30" step="1" value="14">
+    </div>
+
+    <p class="section-label" style="margin-top:20px;">Behavior</p>
+    <div class="control-group">
+      <div class="control-label"><span>Mixing tendency</span><span class="val" id="val-mixing">0.50</span></div>
+      <input type="range" id="mixing" min="0" max="1" step="0.01" value="0.5">
+    </div>
+    <div class="control-group">
+      <div class="control-label"><span>Reef cover</span><span class="val" id="val-cover">0.45</span></div>
+      <input type="range" id="cover" min="0" max="1" step="0.01" value="0.45">
+    </div>
+    <div class="control-group">
+      <div class="control-label"><span>Predation risk</span><span class="val" id="val-risk">0.30</span></div>
+      <input type="range" id="risk" min="0" max="1" step="0.01" value="0.3">
+    </div>
+
+    <div class="btn-row">
+      <button class="primary" id="btn-reset">Regenerate</button>
+      <button id="btn-pause">Pause</button>
+    </div>
+  </div>
+
+  <div class="canvas-wrap panel" style="padding:0; overflow:hidden;">
+    <canvas id="sim" width="640" height="560"></canvas>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="panel metrics">
+    <p class="section-label">Live groups</p>
+    <div class="metric-big" id="mixed-count">0</div>
+    <div class="metric-caption" id="mixed-caption">mixed-species groups detected</div>
+    <div class="group-list" id="group-list"></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('sim');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const SPECIES_COLORS = ['#4FD1C5', '#F2B84B', '#E85D9E', '#9BD86E', '#62A7E0'];
+  const SPECIES_NAMES = ['Damselfish', 'Wrasse', 'Goatfish', 'Snapper', 'Surgeonfish'];
+
+  const CONFIG = {
+    speciesCount: 3,
+    individualsPerSpecies: 14,
+    mixing: 0.5,
+    cover: 0.45,
+    risk: 0.3
+  };
+
+  const RR = 13;      // repulsion radius (personal space, species-blind)
+  const RO_BASE = 30;  // orientation radius base
+  const RA_BASE = 68;  // attraction radius base
+  const MAX_SPEED = 2.1;
+  const MAX_FORCE = 0.09;
+  const CLUSTER_DIST = 32;
+
+  // Fixed reef cover patches (position + base radius + base intensity)
+  const COVER_PATCHES = [
+    {x: 150, y: 160, r: 120, base: 0.9},
+    {x: 480, y: 380, r: 140, base: 0.75},
+    {x: 340, y: 480, r: 90,  base: 0.6},
+    {x: 540, y: 120, r: 80,  base: 0.55}
+  ];
+
+  let agents = [];
+  let running = true;
+  let frame = 0;
+
+  function rand(a,b){ return a + Math.random()*(b-a); }
+
+  function coverAt(x,y){
+    let c = 0;
+    for(const p of COVER_PATCHES){
+      const d = Math.hypot(x-p.x, y-p.y);
+      if(d < p.r){
+        c += p.base * (1 - d/p.r);
+      }
+    }
+    return Math.min(1, c) * CONFIG.cover;
+  }
+
+  function initAgents(){
+    agents = [];
+    for(let s=0; s<CONFIG.speciesCount; s++){
+      for(let i=0; i<CONFIG.individualsPerSpecies; i++){
+        agents.push({
+          species: s,
+          x: rand(40, W-40),
+          y: rand(40, H-40),
+          vx: rand(-1,1),
+          vy: rand(-1,1)
+        });
+      }
+    }
+  }
+
+  function buildLegend(){
+    const el = document.getElementById('legend');
+    el.innerHTML = '';
+    for(let s=0; s<CONFIG.speciesCount; s++){
+      const item = document.createElement('div');
+      item.className = 'legend-item';
+      item.innerHTML = `<span class="legend-dot" style="background:${SPECIES_COLORS[s]}"></span>${SPECIES_NAMES[s]}`;
+      el.appendChild(item);
+    }
+  }
+
+  function step(){
+    const riskBoost = 1 + 1.6 * CONFIG.risk;
+
+    for(const a of agents){
+      let sepX=0, sepY=0, sepN=0;
+      let aliX=0, aliY=0, aliN=0;
+      let cohX=0, cohY=0, cohN=0;
+
+      const localCover = coverAt(a.x, a.y);
+      const perceptionScale = 1 - 0.65 * localCover;
+      const ro = RO_BASE * perceptionScale;
+      const ra = RA_BASE * perceptionScale * riskBoost;
+
+      for(const b of agents){
+        if(b === a) continue;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const d = Math.hypot(dx,dy);
+        if(d === 0 || d > ra) continue;
+
+        const sameSpecies = b.species === a.species;
+        const weight = sameSpecies ? 1 : CONFIG.mixing;
+
+        if(d < RR){
+          sepX -= dx/d; sepY -= dy/d; sepN++;
+        } else if(d < ro){
+          aliX += b.vx * weight; aliY += b.vy * weight; aliN += weight;
+        } else if(d < ra){
+          cohX += dx * weight; cohY += dy * weight; cohN += weight;
+        }
+      }
+
+      let steerX = 0, steerY = 0;
+
+      if(sepN > 0){ steerX += (sepX/sepN) * 1.6; steerY += (sepY/sepN) * 1.6; }
+      if(aliN > 0){ steerX += (aliX/aliN) * 0.9; steerY += (aliY/aliN) * 0.9; }
+      if(cohN > 0){ steerX += (cohX/cohN) * 0.045; steerY += (cohY/cohN) * 0.045; }
+
+      // gentle wander
+      steerX += rand(-0.06, 0.06);
+      steerY += rand(-0.06, 0.06);
+
+      const steerMag = Math.hypot(steerX, steerY);
+      if(steerMag > MAX_FORCE){
+        steerX = steerX/steerMag * MAX_FORCE;
+        steerY = steerY/steerMag * MAX_FORCE;
+      }
+
+      a.vx += steerX; a.vy += steerY;
+      const speed = Math.hypot(a.vx, a.vy);
+      if(speed > MAX_SPEED){ a.vx = a.vx/speed * MAX_SPEED; a.vy = a.vy/speed * MAX_SPEED; }
+      if(speed < 0.4){ a.vx *= 1.05; a.vy *= 1.05; }
+
+      a.x += a.vx; a.y += a.vy;
+
+      const margin = 16;
+      if(a.x < margin){ a.x = margin; a.vx *= -1; }
+      if(a.x > W-margin){ a.x = W-margin; a.vx *= -1; }
+      if(a.y < margin){ a.y = margin; a.vy *= -1; }
+      if(a.y > H-margin){ a.y = H-margin; a.vy *= -1; }
+    }
+  }
+
+  function findClusters(){
+    const n = agents.length;
+    const parent = new Array(n).fill(0).map((_,i)=>i);
+    function find(i){ while(parent[i]!==i){ parent[i]=parent[parent[i]]; i=parent[i]; } return i; }
+    function union(i,j){ const ri=find(i), rj=find(j); if(ri!==rj) parent[ri]=rj; }
+
+    for(let i=0;i<n;i++){
+      for(let j=i+1;j<n;j++){
+        const d = Math.hypot(agents[i].x-agents[j].x, agents[i].y-agents[j].y);
+        if(d < CLUSTER_DIST) union(i,j);
+      }
+    }
+
+    const groups = {};
+    for(let i=0;i<n;i++){
+      const r = find(i);
+      if(!groups[r]) groups[r] = [];
+      groups[r].push(agents[i]);
+    }
+
+    return Object.values(groups).filter(g => g.length >= 2);
+  }
+
+  function updateMetrics(){
+    const clusters = findClusters();
+    const mixed = clusters.filter(g => new Set(g.map(a=>a.species)).size > 1);
+
+    document.getElementById('mixed-count').textContent = mixed.length;
+    document.getElementById('mixed-caption').textContent =
+      `mixed-species groups (of ${clusters.length} total)`;
+
+    const list = document.getElementById('group-list');
+    list.innerHTML = '';
+
+    if(clusters.length === 0){
+      list.innerHTML = '<div class="empty-note">No groups of 2+ currently formed.</div>';
+      return;
+    }
+
+    const sorted = [...clusters].sort((a,b)=> b.length - a.length).slice(0, 12);
+    for(const g of sorted){
+      const speciesSet = new Set(g.map(a=>a.species));
+      const isMixed = speciesSet.size > 1;
+      const row = document.createElement('div');
+      row.className = 'group-row' + (isMixed ? ' mixed' : '');
+      const chips = [...speciesSet].sort().map(s =>
+        `<span class="chip" style="background:${SPECIES_COLORS[s]}"></span>`
+      ).join('');
+      row.innerHTML = `<div class="composition">${chips}</div><span>${isMixed ? 'mixed' : SPECIES_NAMES[[...speciesSet][0]]}</span><span class="group-size">${g.length}</span>`;
+      list.appendChild(row);
+    }
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    // reef cover patches
+    for(const p of COVER_PATCHES){
+      const grad = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);
+      const alpha = 0.22 * p.base * CONFIG.cover;
+      grad.addColorStop(0, `rgba(47,107,94,${alpha})`);
+      grad.addColorStop(1, 'rgba(47,107,94,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // predation risk vignette (ambient, stronger near edges)
+    if(CONFIG.risk > 0.02){
+      const grad = ctx.createRadialGradient(W/2,H/2, Math.min(W,H)*0.25, W/2,H/2, Math.max(W,H)*0.62);
+      grad.addColorStop(0, 'rgba(194,59,59,0)');
+      grad.addColorStop(1, `rgba(194,59,59,${0.18*CONFIG.risk})`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,W,H);
+    }
+
+    // mixed-group glow (signature element)
+    const clusters = findClusters();
+    for(const g of clusters){
+      const speciesSet = new Set(g.map(a=>a.species));
+      if(speciesSet.size <= 1) continue;
+      let cx=0, cy=0;
+      for(const a of g){ cx+=a.x; cy+=a.y; }
+      cx/=g.length; cy/=g.length;
+      let maxR = 20;
+      for(const a of g){ maxR = Math.max(maxR, Math.hypot(a.x-cx, a.y-cy) + 14); }
+      const pulse = 0.55 + 0.25*Math.sin(frame*0.05);
+      const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,maxR);
+      grad.addColorStop(0, `rgba(255,140,90,${0.16*pulse})`);
+      grad.addColorStop(1, 'rgba(255,140,90,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx,cy,maxR,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    // agents
+    for(const a of agents){
+      const heading = Math.atan2(a.vy, a.vx);
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(heading);
+      ctx.fillStyle = SPECIES_COLORS[a.species];
+      ctx.beginPath();
+      ctx.moveTo(6,0);
+      ctx.lineTo(-4,3.2);
+      ctx.lineTo(-4,-3.2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function loop(){
+    if(running){
+      step();
+      frame++;
+      draw();
+      if(frame % 20 === 0) updateMetrics();
+    }
+    requestAnimationFrame(loop);
+  }
+
+  function bindControls(){
+    const speciesEl = document.getElementById('species-count');
+    const individualsEl = document.getElementById('individuals-count');
+    const mixingEl = document.getElementById('mixing');
+    const coverEl = document.getElementById('cover');
+    const riskEl = document.getElementById('risk');
+
+    speciesEl.addEventListener('input', e=>{
+      CONFIG.speciesCount = +e.target.value;
+      document.getElementById('val-species').textContent = CONFIG.speciesCount;
+    });
+    individualsEl.addEventListener('input', e=>{
+      CONFIG.individualsPerSpecies = +e.target.value;
+      document.getElementById('val-individuals').textContent = CONFIG.individualsPerSpecies;
+    });
+    mixingEl.addEventListener('input', e=>{
+      CONFIG.mixing = +e.target.value;
+      document.getElementById('val-mixing').textContent = CONFIG.mixing.toFixed(2);
+    });
+    coverEl.addEventListener('input', e=>{
+      CONFIG.cover = +e.target.value;
+      document.getElementById('val-cover').textContent = CONFIG.cover.toFixed(2);
+    });
+    riskEl.addEventListener('input', e=>{
+      CONFIG.risk = +e.target.value;
+      document.getElementById('val-risk').textContent = CONFIG.risk.toFixed(2);
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', ()=>{
+      buildLegend();
+      initAgents();
+    });
+
+    document.getElementById('btn-pause').addEventListener('click', (e)=>{
+      running = !running;
+      e.target.textContent = running ? 'Pause' : 'Resume';
+    });
+  }
+
+  buildLegend();
+  initAgents();
+  bindControls();
+  loop();
+})();
+</script>
+
+</body>
+</html>

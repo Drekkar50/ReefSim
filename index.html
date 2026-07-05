@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Mixed-Species Group Simulator — Reef Fish</title>
+  <meta name="description" content="Individual-based zonal interaction model for reef fish mixed-species group dynamics. 3D simulation with Three.js.">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Import map: tells the browser how to resolve bare module specifiers
+       like 'three' and 'three/addons/...'. Required because Three.js addon
+       modules (e.g. OrbitControls) internally do `import { ... } from 'three'`
+       which browsers can't resolve without this mapping. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <div class="app-header">
+    <h1>Mixed-species group simulator <span style="opacity:0.4; font-weight:400; font-size:14px;">3D</span></h1>
+    <p class="subtitle">Individual-level zonal interaction model (repulsion / orientation / attraction) for reef fish in 3D. Reef cover reduces perception locally; predation risk strengthens grouping; mixing tendency sets how strongly individuals respond to heterospecifics versus conspecifics. Drag to orbit, scroll to zoom.</p>
+  </div>
+
+  <div class="layout">
+
+    <!-- ============================================================ -->
+    <!-- CONTROL PANEL — Parameter sliders and action buttons         -->
+    <!-- ============================================================ -->
+    <div class="panel controls">
+      <p class="section-label">Population</p>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Species</span>
+          <span class="val" id="val-species">3</span>
+        </div>
+        <input type="range" id="species-count" min="1" max="5" step="1" value="3">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Individuals per species</span>
+          <span class="val" id="val-individuals">14</span>
+        </div>
+        <input type="range" id="individuals-count" min="4" max="30" step="1" value="14">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>World X</span>
+          <span class="val" id="val-worldx">400</span>
+        </div>
+        <input type="range" id="world-size-x" min="100" max="800" step="50" value="400">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>World Y (height)</span>
+          <span class="val" id="val-worldy">400</span>
+        </div>
+        <input type="range" id="world-size-y" min="100" max="800" step="50" value="400">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>World Z</span>
+          <span class="val" id="val-worldz">400</span>
+        </div>
+        <input type="range" id="world-size-z" min="100" max="800" step="50" value="400">
+      </div>
+
+      <p class="section-label" style="margin-top:20px;">Behavior</p>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Mixing tendency</span>
+          <span class="val" id="val-mixing">0.50</span>
+        </div>
+        <input type="range" id="mixing" min="0" max="1" step="0.01" value="0.5">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Reef cover</span>
+          <span class="val" id="val-cover">0.45</span>
+        </div>
+        <input type="range" id="cover" min="0" max="1" step="0.01" value="0.45">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Predation risk</span>
+          <span class="val" id="val-risk">0.30</span>
+        </div>
+        <input type="range" id="risk" min="0" max="1" step="0.01" value="0.3">
+      </div>
+
+      <div class="btn-row">
+        <button class="primary" id="btn-reset">Regenerate</button>
+        <button id="btn-pause">Pause</button>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 3D VIEWPORT — Three.js canvas is mounted here                -->
+    <!-- ============================================================ -->
+    <div class="panel viewport-wrap" id="viewport" style="padding:0; overflow:hidden;">
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- METRICS PANEL — Live group analysis                          -->
+    <!-- ============================================================ -->
+    <div class="panel metrics">
+      <p class="section-label">Live groups</p>
+      <div class="metric-big" id="mixed-count">0</div>
+      <div class="metric-caption" id="mixed-caption">mixed-species groups detected</div>
+      <div class="group-list" id="group-list"></div>
+    </div>
+
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- APPLICATION BOOTSTRAP                                          -->
+  <!--                                                                -->
+  <!-- Uses ES modules imported from CDN. The import map below is     -->
+  <!-- not needed since we use full URLs in each module, but the       -->
+  <!-- script type="module" enables ES module syntax.                 -->
+  <!-- ============================================================== -->
+  <script type="module">
+    import { initAgents, step } from './js/simulation.js';
+    import { init as initRenderer, updateScene, render } from './js/renderer.js';
+    import { bindControls, buildLegend, updateMetrics, isRunning } from './js/ui.js';
+
+    // Initialize the simulation
+    initAgents();
+
+    // Initialize the 3D renderer (mounts canvas into the viewport div)
+    const viewport = document.getElementById('viewport');
+    initRenderer(viewport);
+
+    // Build the UI
+    buildLegend();
+    bindControls();
+
+    // Animation loop
+    let frame = 0;
+
+    function loop() {
+      if (isRunning()) {
+        step();
+        frame++;
+
+        // Update metrics every 20 frames (reduces DOM thrashing)
+        if (frame % 20 === 0) {
+          updateMetrics();
+        }
+      }
+
+      // Always update visuals (even when paused, for camera movement)
+      updateScene(frame);
+      render();
+
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+
+</body>
+</html>

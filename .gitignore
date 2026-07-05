@@ -1,0 +1,51 @@
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# --- Node / JS (Three.js frontend) ---
+node_modules/
+dist/
+build/
+.npm/
+.parcel-cache/
+*.log
+npm-debug.log*
+
+# --- Python (if analysis / data scripts) ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+*.egg-info/
+
+# --- R (if thesis analysis lives alongside) ---
+.Rhistory
+.RData
+.Rproj.user/
+
+# --- Data (keep raw/behavioral video data OUT of git — large + likely sensitive) ---
+data/raw/
+data/private/
+*.mp4
+*.avi
+*.mov
+*.csv
+!sample_data/**/*.csv
+
+# --- Simulation outputs ---
+*.log
+output/
+results/
+*.png
+*.gif
+!docs/**/*.png
+
+# --- Env / secrets ---
+.env
+*.local

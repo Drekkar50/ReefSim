@@ -1,0 +1,315 @@
+/* ============================================================
+   ReefSim 3D — Stylesheet
+   Dark ocean theme ported from the original 2D simulator.
+   ============================================================ */
+
+/* --- Google Fonts ------------------------------------------ */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* --- Design Tokens ----------------------------------------- */
+:root {
+  --bg: #0A1F2B;
+  --panel: #0F2A38;
+  --panel-line: #1C3E4E;
+  --text: #D7E4E6;
+  --text-dim: #7E97A0;
+  --coral: #FF8C5A;
+  --sand: #E8D9B5;
+}
+
+/* --- Reset & Base ------------------------------------------ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  padding: 28px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- App Header -------------------------------------------- */
+.app-header {
+  margin-bottom: 22px;
+}
+
+.app-header h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 4px 0;
+}
+
+.app-header p {
+  color: var(--text-dim);
+  font-size: 13px;
+  max-width: 640px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* --- Main Layout ------------------------------------------- */
+.layout {
+  display: flex;
+  flex-direction: row;
+  gap: 22px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* --- Shared Panel Base ------------------------------------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+
+/* ============================================================
+   CONTROLS PANEL  (left sidebar)
+   ============================================================ */
+.controls {
+  width: 260px;
+  flex-shrink: 0;
+}
+
+/* --- Section Labels ---------------------------------------- */
+.section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  padding-bottom: 8px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--panel-line);
+}
+
+/* --- Control Groups ---------------------------------------- */
+.control-group {
+  margin-bottom: 18px;
+}
+
+.control-label {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.control-label .val {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--sand);
+}
+
+/* --- Range Sliders ----------------------------------------- */
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--coral);
+  cursor: pointer;
+}
+
+/* --- Number Inputs ----------------------------------------- */
+input[type="number"] {
+  width: 64px;
+  background: var(--bg);
+  border: 1px solid var(--panel-line);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  outline: none;
+}
+
+input[type="number"]:focus {
+  border-color: var(--coral);
+}
+
+/* --- Buttons ----------------------------------------------- */
+button {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 7px;
+  border: 1px solid var(--panel-line);
+  background: var(--bg);
+  color: var(--text);
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+button:hover {
+  border-color: var(--coral);
+}
+
+/* Primary action button (e.g. Start / Reset) */
+button.primary {
+  background: var(--coral);
+  color: var(--bg);
+  font-weight: 600;
+  border-color: var(--coral);
+}
+
+button.primary:hover {
+  opacity: 0.9;
+}
+
+/* Button row — side-by-side buttons */
+.btn-row {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.btn-row button {
+  flex: 1;
+}
+
+/* ============================================================
+   VIEWPORT  (centre — 3D canvas area)
+   ============================================================ */
+.viewport-wrap {
+  flex: 1 1 auto;
+  min-width: 480px;
+  min-height: 560px;
+  position: relative;
+}
+
+.viewport-wrap canvas {
+  display: block;
+  width: 100%;
+  border-radius: 10px;
+  background: #081720;
+}
+
+/* --- Legend Overlay ----------------------------------------- */
+.legend {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  background: rgba(10, 31, 43, 0.82);
+  padding: 8px 10px;
+  border-radius: 7px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.legend-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   METRICS PANEL  (right sidebar)
+   ============================================================ */
+.metrics {
+  width: 260px;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* --- Big Headline Metric ----------------------------------- */
+.metric-big {
+  font-size: 30px;
+  font-weight: 500;
+  color: var(--coral);
+  line-height: 1;
+}
+
+.metric-caption {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 18px;
+}
+
+/* --- Group List (scrollable) ------------------------------- */
+.group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Custom thin scrollbar */
+.group-list::-webkit-scrollbar {
+  width: 4px;
+}
+.group-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.group-list::-webkit-scrollbar-thumb {
+  background: var(--panel-line);
+  border-radius: 2px;
+}
+
+/* --- Individual Group Rows --------------------------------- */
+.group-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--panel-line);
+}
+
+/* Highlight row for mixed-species groups */
+.group-row.mixed {
+  border-color: var(--coral);
+}
+
+/* Species composition chips */
+.composition {
+  display: flex;
+  flex-direction: row;
+  gap: 3px;
+}
+
+.chip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Group size pushed to the right */
+.group-size {
+  margin-left: auto;
+  color: var(--text-dim);
+}
+
+/* Empty state note */
+.empty-note {
+  color: var(--text-dim);
+  font-size: 11.5px;
+}
